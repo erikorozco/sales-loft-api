@@ -1,6 +1,5 @@
 'use strict';
 
-import { response } from 'express';
 import q from 'q';
 
 export class PeopleService {
@@ -167,7 +166,7 @@ export class PeopleService {
      * @returns Promise
      * @memberof PeopleService
      */
-    processGetSimilarEmails(emails, maxPorcentage = 30) {
+    processGetSimilarEmails(emails, distanceAllowed = 3) {
         const deferred = q.defer();
         let result = [];
 
@@ -181,9 +180,12 @@ export class PeopleService {
             for (let j = 0 + 1; j < emails.length; j++) {
 
                 if (i !== j && emails[i] !== emails[j]) {
-                    let difference = this.helpers.string.getStringsPorcentageDiffence([...emails[i]], [...emails[j]]);
-                    console.log(difference);
-                    if (difference <= maxPorcentage) {
+
+                    const levenshtein = require('fast-levenshtein');
+
+                    // let difference = this.helpers.string.getStringsPorcentageDiffence([...emails[i]], [...emails[j]]);
+                    let difference = levenshtein.get(emails[i], emails[j]);
+                    if (difference <= distanceAllowed) {
                         tmp.similarEmails.push(emails[j]);
                     }
                 }
