@@ -1,5 +1,6 @@
 'use strict';
 
+import { response } from 'express';
 import q from 'q';
 
 export class PeopleService {
@@ -7,13 +8,13 @@ export class PeopleService {
     /**
      * Creates an instance of PeopleService.
      * @param {PeopleModel} model
-     * @param {Object} inputFilters
+     * @param {Object} helpers
      * @memberof PeopleService
      */
-    constructor(model, inputFilters) {
+    constructor(model, helpers) {
         
         this.model = model;
-        this.inputFilters = inputFilters;
+        this.helpers = helpers;
 
     }
 
@@ -131,16 +132,71 @@ export class PeopleService {
 
         const deferred = q.defer();
 
-        this.model.getAll()
+        this.getAll()
             .then((response) => {
 
-                deferred.resolve(response.data);
+                const emails = response.data.map((person) => {
+                    return person.email_address;
+                });
+    
+                this.processGetSimilarEmails(emails)
+                    .then((response) => {
+
+                        deferred.resolve(response);
+
+                    }, (response) => {
+
+                        deferred.reject(response);
+
+                    });
 
             }, (response) => {
 
                 deferred.reject(response);
 
             });
+
+        return deferred.promise;
+    }
+
+    /**
+     * 
+     * Process a list of emails and find similar strings that fullfill the give max porcetange difference
+     *
+     * @param {Array<String>} emails
+     * @returns Promise
+     * @memberof PeopleService
+     */
+    processGetSimilarEmails(emails, maxPorcentage = 30) {
+        const deferred = q.defer();
+        let result = [];
+
+        for (let i = 0; i < emails.length; i++) {
+
+            let tmp = {
+                email: emails[i],
+                similarEmails: []
+            };
+
+            for (let j = 0 + 1; j < emails.length; j++) {
+
+                if (i !== j && emails[i] !== emails[j]) {
+                    let difference = this.helpers.string.getStringsPorcentageDiffence([...emails[i]], [...emails[j]]);
+                    console.log(difference);
+                    if (difference <= maxPorcentage) {
+                        tmp.similarEmails.push(emails[j]);
+                    }
+                }
+
+            }
+
+            result.push(tmp);
+
+        }
+
+        deferred.resolve({
+            data: result
+        });
 
         return deferred.promise;
     }

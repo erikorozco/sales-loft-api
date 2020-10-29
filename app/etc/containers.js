@@ -10,4 +10,6 @@ module.exports = function(request, sessionVariables) {
     
     request.locals.containers.remoteApis = require('./containers/remoteApis.js')(request, sessionVariables);
 
+    request.locals.containers.helpers = require('./containers/helpers.js')();
+
 };
